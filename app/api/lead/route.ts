@@ -6,30 +6,32 @@ export async function POST(req: Request) {
     const { name, business, project, contact } = body ?? {};
 
     if (!name || !project || !contact) {
-      return NextResponse.json({ ok: false, error: "Missing required fields." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Missing required fields." },
+        { status: 400 }
+      );
     }
 
-    // Background email forwarding through FormSubmit.
-    // After first deployment, FormSubmit may require a one-time email activation.
-    const form = new FormData();
-    form.append("_subject", "New Voidline Lead");
-    form.append("_captcha", "false");
-    form.append("Name", String(name));
-    form.append("Business", String(business ?? ""));
-    form.append("Project", String(project));
-    form.append("Contact", String(contact));
-
-    const forward = await fetch("https://formsubmit.co/ajax/voidline.studio.dev@gmail.com", {
+    // send as JSON instead (more stable)
+    await fetch("https://formsubmit.co/ajax/voidline.studio.dev@gmail.com", {
       method: "POST",
-      body: form
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        _subject: "New Voidline Lead",
+        Name: name,
+        Business: business,
+        Project: project,
+        Contact: contact,
+      }),
     });
 
-    if (!forward.ok) {
-      return NextResponse.json({ ok: false, error: "Forwarding failed." }, { status: 502 });
-    }
-
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ ok: false, error: "Unexpected error." }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json(
+      { ok: false, error: "Server error" },
+      { status: 500 }
+    );
   }
 }
